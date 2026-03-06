@@ -270,7 +270,7 @@
             결론: 충분히 실현 가능하며, HANA 환경에서 더욱 유리
         </div>
 
-        <p>SAP HANA는 인메모리 데이터베이스로, 대용량 트랜잭션 데이터에 대한 실시간 분석이 가능합니다. MSEG, MKPF, VBAK, LIPS 등 테이블에 이미 저장된 출고/반품 데이터를 활용하여 주요 비율을 자동 산정하는 프로그램은 <strong>3가지 방식</strong>으로 구현할 수 있습니다.</p>
+        <p>우리가 쓰고 있는 SAP HANA에는 출고·반품 데이터가 이미 쌓여 있습니다. 이 데이터를 활용해서 출고율/반품률을 자동으로 계산하고 화면에 보여주는 프로그램을 만들 수 있으며, <strong>3가지 방식</strong>이 있습니다.</p>
     </section>
 
     <!-- 1.1 구현 방식 비교 -->
@@ -282,14 +282,13 @@
                     <tr><th>구분</th><th>방식 1: CDS View + Fiori <span class="badge badge-recommended">추천</span></th><th>방식 2: ABAP Z-프로그램</th><th>방식 3: SAP BTP + Joule AI</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td><strong>개요</strong></td><td>CDS View로 실시간 분석 모델 정의 &rarr; Fiori 대시보드로 시각화</td><td>SAP 내부에서 ABAP으로 커스텀 리포트 개발</td><td>SAP BTP 클라우드에서 AI 기반 분석</td></tr>
-                    <tr><td><strong>HANA 최적화</strong></td><td>&#9733;&#9733;&#9733; HANA 네이티브, Code Pushdown</td><td>&#9733;&#9733; Open SQL 기반</td><td>&#9733;&#9733;&#9733; HANA Cloud 완전 연동</td></tr>
-                    <tr><td><strong>실시간 여부</strong></td><td>실시간 (배치 불필요)</td><td>실행 시점 기준 (배치)</td><td>실시간 + 예측 분석</td></tr>
-                    <tr><td><strong>시각화</strong></td><td>Fiori Elements 앱, SAC 연결</td><td>ALV 리포트 (SAP GUI)</td><td>SAC 대시보드, 웹 기반</td></tr>
-                    <tr><td><strong>개발 난이도</strong></td><td>중간</td><td>중간</td><td>중상</td></tr>
-                    <tr><td><strong>장점</strong></td><td>실시간 비율 산정, 재사용성 높음, 유지보수 용이</td><td>기존 환경에서 바로 실행, 추가 인프라 불필요</td><td>AI/ML 예측 모델 연동, Joule 에이전트, 이상 탐지</td></tr>
-                    <tr><td><strong>단점</strong></td><td>Fiori 앱 구성 추가 작업</td><td>실시간 분석 제한적, UI 구식</td><td>추가 라이선스 비용, 기술적 리소스 필요</td></tr>
-                    <tr><td><strong>예상 기간</strong></td><td>1~3개월</td><td>2~4개월</td><td>4~8개월</td></tr>
+                    <tr><td><strong>한 줄 요약</strong></td><td>SAP 안에서 데이터 조회 화면을 자동 생성 &rarr; 웹 대시보드로 바로 확인</td><td>기존 SAP 개발 방식으로 맞춤 리포트 제작</td><td>SAP 클라우드에서 AI가 분석까지 해주는 방식</td></tr>
+                    <tr><td><strong>속도</strong></td><td>&#9733;&#9733;&#9733; 클릭하면 바로 최신 수치 확인</td><td>&#9733;&#9733; 실행 버튼을 눌러야 결과 나옴</td><td>&#9733;&#9733;&#9733; 실시간 + 미래 예측까지</td></tr>
+                    <tr><td><strong>화면</strong></td><td>깔끔한 웹 대시보드 (Fiori)</td><td>기존 SAP 화면 (ALV 리포트)</td><td>웹 대시보드 + 분석 차트</td></tr>
+                    <tr><td><strong>난이도</strong></td><td>중간</td><td>중간</td><td>다소 높음</td></tr>
+                    <tr><td><strong>장점</strong></td><td>항상 최신 수치, 한번 만들면 여러 곳에서 재활용 가능</td><td>지금 쓰는 SAP 환경에서 바로 실행 가능</td><td>AI가 이상 패턴 감지, 미래 예측까지 가능</td></tr>
+                    <tr><td><strong>단점</strong></td><td>웹 화면 구성 작업 추가 필요</td><td>실시간 확인 어려움, 화면이 다소 구식</td><td>추가 비용 발생, 기술 인력 필요</td></tr>
+                    <tr><td><strong>소요 기간</strong></td><td>1~3개월</td><td>2~4개월</td><td>4~8개월</td></tr>
                 </tbody>
             </table>
         </div>
@@ -297,55 +296,53 @@
 
     <!-- 1.2 CDS View 아키텍처 -->
     <section id="cds">
-        <h2>1.2 CDS View 기반 구현 아키텍처 (추천 방식)</h2>
-        <p>SAP HANA 환경에서 가장 현대적이고 효율적인 접근 방식입니다. CDS View는 HANA 위에서 데이터 모델을 선언적으로 정의하며, Code Pushdown 방식으로 모든 연산을 HANA DB에서 직접 처리합니다.</p>
+        <h2>1.2 추천 방식의 작동 원리</h2>
+        <p>방식 1(CDS View + Fiori)은 SAP에 이미 쌓여 있는 데이터를 자동으로 엮어서 출고율·반품률을 계산하고, 결과를 웹 대시보드에 보여주는 방식입니다. 별도 프로그램을 돌릴 필요 없이 <strong>항상 최신 수치</strong>를 확인할 수 있습니다.</p>
 
-        <div class="arch-diagram">[SAP HANA DB]
+        <div class="arch-diagram">[SAP에 쌓인 출고·반품·주문 데이터]
     &darr;
-[Basic CDS View] &larr; MSEG, MKPF, VBAK, LIPS 테이블 조인
+[1단계] 필요한 데이터를 자동으로 모아서 정리
     &darr;
-[Composite CDS View] &larr; 출고율/반품률 계산 로직
+[2단계] 출고율 / 반품률 등 비율을 자동 계산
     &darr;
-[Consumption CDS View] &larr; @Analytics 어노테이션 추가
-    &darr;
-[Fiori Elements 앱] 또는 [SAP Analytics Cloud 대시보드]</div>
+[3단계] 웹 대시보드 또는 분석 화면에 표시</div>
 
         <h3>핵심 포인트</h3>
         <ul>
-            <li>Basic View에서 MSEG(자재문서 항목)와 MKPF(문서 헤더)를 조인하여 이동유형별 수량 집계</li>
-            <li>Composite View에서 출고수량/주문수량, 반품수량/출고수량 비율 계산</li>
-            <li>Consumption View에 <code>@Analytics.dataCategory: #CUBE</code> 어노테이션으로 Fiori/SAC에서 바로 소비 가능</li>
-            <li>별도의 배치 프로그램 없이 <strong>실시간으로</strong> 비율이 산정됨</li>
+            <li>SAP에 기록된 출고·반품 내역을 자동으로 모아서 수량을 집계</li>
+            <li>출고율(출고수량/주문수량), 반품률(반품수량/출고수량)을 자동 계산</li>
+            <li>결과를 웹 대시보드나 SAP Analytics Cloud에서 바로 확인 가능</li>
+            <li>별도의 프로그램 실행 없이 <strong>항상 실시간</strong>으로 수치가 갱신됨</li>
         </ul>
 
-        <h3>1.3 SAP 핵심 데이터 소스</h3>
+        <h3>1.3 어디에 있는 데이터를 쓰나요?</h3>
         <div class="table-wrapper">
             <table>
                 <thead>
-                    <tr><th>테이블/T-Code</th><th>설명</th><th>활용 용도</th></tr>
+                    <tr><th>SAP 화면/데이터</th><th>쉽게 말하면</th><th>어디에 쓰이나</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>MSEG</td><td>자재문서 항목 테이블</td><td>이동유형별 출고/반품 수량 추출</td></tr>
-                    <tr><td>MKPF</td><td>자재문서 헤더 테이블</td><td>문서 날짜, 기간별 필터링</td></tr>
-                    <tr><td>VBAK / VBAP</td><td>판매오더 헤더/항목</td><td>주문 수량 기준 출고율 산정</td></tr>
-                    <tr><td>LIKP / LIPS</td><td>납품 문서 헤더/항목</td><td>실제 출고 수량 확인</td></tr>
-                    <tr><td>MB51</td><td>자재문서 리스트 T-Code</td><td>이동유형별 트랜잭션 조회</td></tr>
-                    <tr><td>MIGO</td><td>자재이동 종합 처리</td><td>입고/출고/반품 모든 이동유형 지원</td></tr>
+                    <tr><td>MSEG</td><td>물건이 움직인 기록 (출고, 반품 등)</td><td>출고·반품 수량 파악</td></tr>
+                    <tr><td>MKPF</td><td>물건 이동 기록의 날짜·번호 정보</td><td>기간별 필터링 (월별, 분기별)</td></tr>
+                    <tr><td>VBAK / VBAP</td><td>고객이 주문한 내역</td><td>주문 수량 기준으로 출고율 계산</td></tr>
+                    <tr><td>LIKP / LIPS</td><td>실제로 배송한 내역</td><td>실제 출고 수량 확인</td></tr>
+                    <tr><td>MB51</td><td>자재 이동 내역 조회 화면</td><td>입출고 이력 한눈에 보기</td></tr>
+                    <tr><td>MIGO</td><td>입고·출고·반품 처리 화면</td><td>모든 종류의 물건 이동 처리</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <h3>1.4 주요 비율 산출 공식</h3>
+        <h3>1.4 자동으로 계산되는 비율</h3>
         <div class="table-wrapper">
             <table>
                 <thead>
-                    <tr><th>비율</th><th>산출 공식</th><th>관련 이동유형</th></tr>
+                    <tr><th>비율</th><th>계산 방법</th><th>의미</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>출고율(%)</td><td>출고수량 &divide; 주문수량 &times; 100</td><td>601, 602 등</td></tr>
-                    <tr><td>반품률(%)</td><td>반품수량 &divide; 출고수량 &times; 100</td><td>122, 161, 162 등</td></tr>
-                    <tr><td>납품 준수율(%)</td><td>기한 내 납품건수 &divide; 총 주문건수 &times; 100</td><td>LIKP 기준</td></tr>
-                    <tr><td>재고 회전율</td><td>매출원가 &divide; 평균재고</td><td>MSEG + 회계데이터</td></tr>
+                    <tr><td>출고율(%)</td><td>출고수량 &divide; 주문수량 &times; 100</td><td>주문 대비 실제로 얼마나 출고했는지</td></tr>
+                    <tr><td>반품률(%)</td><td>반품수량 &divide; 출고수량 &times; 100</td><td>출고한 것 중 얼마나 돌아왔는지</td></tr>
+                    <tr><td>납품 준수율(%)</td><td>기한 내 납품건수 &divide; 총 주문건수 &times; 100</td><td>약속한 날짜에 제때 납품했는지</td></tr>
+                    <tr><td>재고 회전율</td><td>매출원가 &divide; 평균재고</td><td>재고가 얼마나 빨리 소진되는지</td></tr>
                 </tbody>
             </table>
         </div>
@@ -353,8 +350,8 @@
 
     <!-- 1.5 Joule -->
     <section id="joule">
-        <h2>1.5 SAP Joule AI 에이전트 &mdash; S/4HANA Finance 연동</h2>
-        <p>SAP는 2025년 하반기부터 Joule AI 에이전트를 본격 출시하여 S/4HANA 내 400개 이상의 AI 기반 유스케이스를 제공하고 있습니다. SAP HANA를 사용 중이라면 아래 Joule 에이전트들과의 호환성이 높습니다.</p>
+        <h2>1.5 SAP에서 제공하는 AI 비서 (Joule)</h2>
+        <p>SAP는 회계·재무 업무를 도와주는 AI 비서 'Joule'을 출시했습니다. 우리가 쓰는 SAP HANA와 바로 연결되며, 아래와 같은 업무를 AI가 대신 처리해줍니다.</p>
 
         <div class="table-wrapper">
             <table>
@@ -373,7 +370,7 @@
             </table>
         </div>
 
-        <p><strong>Joule Studio (2026 Q1 GA):</strong> 기업별 커스텀 AI 에이전트를 직접 설계할 수 있는 도구입니다. 광동제약의 제약/유통 특수 프로세스에 맞는 맞춤형 에이전트 개발이 가능합니다.</p>
+        <p><strong>Joule Studio (2026년 출시):</strong> 우리 회사에 맞는 AI 비서를 직접 만들 수 있는 도구입니다. 광동제약의 제약·유통 업무 특성에 맞게 맞춤형으로 설정할 수 있습니다.</p>
     </section>
 
     <!-- Part 2 -->
@@ -391,7 +388,7 @@
         <h4>1. 자동 분개 및 전표 처리</h4>
         <p>AI가 거래 적요를 분석하여 적절한 계정과목을 자동 분류하고 전표를 생성합니다. 국내 AI 회계 솔루션들은 96% 수준의 자동 분류 정확도를 달성하고 있으며, 자금일보 작성 시간을 획기적으로 줄여줍니다.</p>
         <div class="effect-item"><span class="effect-label">효과:</span><span>월말 마감 3배 단축, 실시간 분개 처리</span></div>
-        <div class="case-note">사례: Agentic AI 기반 회계 에이전트가 총계정원장, 보조원장, 은행 피드에 접근하여 실시간 조정 및 조정분개 초안 생성</div>
+        <div class="case-note">사례: AI가 장부와 은행 내역을 비교해서 자동으로 분개 초안을 만들어 줌</div>
 
         <h4>2. 이상거래 탐지 및 부정 감시</h4>
         <p>AI가 거래 패턴을 학습하여 비정상적인 거래를 자동으로 플래깅합니다. 금액 이상, 시간대 이상, 거래 상대방 이상 등을 복합적으로 분석하여 부정 리스크를 조기에 식별합니다.</p>
@@ -406,7 +403,7 @@
         <h4>4. 송장/청구서 자동 처리</h4>
         <p>AI가 송장, 청구서, 영수증 등 비정형 문서를 자동 인식하고 데이터를 추출하여 ERP 시스템에 자동 입력합니다.</p>
         <div class="effect-item"><span class="effect-label">효과:</span><span>SAP 송장 처리 시간 60% 이상 단축</span></div>
-        <div class="case-note">기술: SAP Document Information Extraction + LLM 기반 템플릿 없는 문서 처리</div>
+        <div class="case-note">기술: SAP의 AI 문서 인식 기능 &ndash; 양식이 달라도 자동으로 내용을 읽어냄</div>
 
         <h4>5. 재무 보고서 자동 생성</h4>
         <p>AI가 재무 데이터를 분석하여 경영진용 보고서를 자동 생성합니다. 예산 vs 실적 비교, 추세 분석, 이상치 설명까지 자연어로 제공합니다.</p>
